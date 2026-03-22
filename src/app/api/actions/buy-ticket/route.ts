@@ -5,13 +5,14 @@ import {
   createPostResponse,
 } from "@solana/actions";
 import {
-  Connection,
   PublicKey,
   SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { SOLANA_RPC, PROGRAM_PUBKEY, getDemoEvent, getEventPDA, getTicketPDA } from "@/lib/constants";
+import { getConnection, getProgramId, getDemoEvent, getEventPDA, getTicketPDA } from "@/lib/constants";
+
+export const dynamic = "force-dynamic";
 
 // GET - Returns Action metadata for the Blink
 export async function GET() {
@@ -58,7 +59,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const connection = new Connection(SOLANA_RPC, "confirmed");
+    const connection = getConnection();
+    const programId = getProgramId();
 
     // Derive PDAs
     const authorityPubkey = new PublicKey(event.authority);
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
     ];
 
     const buyTicketIx = new TransactionInstruction({
-      programId: PROGRAM_PUBKEY,
+      programId,
       keys,
       data: discriminator,
     });

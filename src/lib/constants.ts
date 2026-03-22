@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -8,8 +8,13 @@ function requireEnv(name: string): string {
   return value;
 }
 
-export const SOLANA_RPC = requireEnv("SOLANA_RPC_URL");
-export const PROGRAM_PUBKEY = new PublicKey(requireEnv("PROGRAM_ID"));
+export function getConnection(): Connection {
+  return new Connection(requireEnv("SOLANA_RPC_URL"), "confirmed");
+}
+
+export function getProgramId(): PublicKey {
+  return new PublicKey(requireEnv("PROGRAM_ID"));
+}
 
 export function getDemoEvent() {
   return {
@@ -29,13 +34,13 @@ export function getEventPDA(authority: PublicKey, eventId: number): [PublicKey, 
 
   return PublicKey.findProgramAddressSync(
     [authority.toBuffer(), Buffer.from("event"), eventIdBuffer],
-    PROGRAM_PUBKEY
+    getProgramId()
   );
 }
 
 export function getTicketPDA(eventPDA: PublicKey, buyer: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [eventPDA.toBuffer(), Buffer.from("ticket"), buyer.toBuffer()],
-    PROGRAM_PUBKEY
+    getProgramId()
   );
 }
