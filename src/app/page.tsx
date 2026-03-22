@@ -29,6 +29,9 @@ export default function Home() {
             <a href="#steps" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
               How it works
             </a>
+            <a href="#use-cases" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
+              Use Cases
+            </a>
             <a href="#demo" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
               Demo
             </a>
@@ -115,6 +118,70 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Use Cases ── */}
+      <section id="use-cases" className="py-24 px-5 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-3">
+            One platform.{" "}
+            <span className="bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
+              Five verticals.
+            </span>
+          </h2>
+          <p className="text-gray-500 text-center mb-14 max-w-lg mx-auto">
+            BlinkTicket works for any type of on-chain funding — not just events.
+          </p>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              {
+                icon: "🎪",
+                title: "Events & Conferences",
+                desc: "Sell tickets to meetups, hackathons, and conferences via any social link.",
+                color: "from-purple-600/20 to-purple-800/10",
+                border: "hover:border-purple-500/30",
+              },
+              {
+                icon: "🔬",
+                title: "Science & Research",
+                desc: "Fund DeSci grants and scholarships. Transparent, on-chain contributions.",
+                color: "from-blue-600/20 to-blue-800/10",
+                border: "hover:border-blue-500/30",
+              },
+              {
+                icon: "🎵",
+                title: "Music & Art",
+                desc: "Release albums, art drops, or crowdfund creative projects with NFT tickets.",
+                color: "from-pink-600/20 to-pink-800/10",
+                border: "hover:border-pink-500/30",
+              },
+              {
+                icon: "👥",
+                title: "Community / DAOs",
+                desc: "Fund community projects, governance proposals, or DAO initiatives.",
+                color: "from-teal-600/20 to-teal-800/10",
+                border: "hover:border-teal-500/30",
+              },
+              {
+                icon: "🚀",
+                title: "Open / Anything",
+                desc: "Any use case you can imagine. If it needs funding via a link, BlinkTicket works.",
+                color: "from-amber-600/20 to-amber-800/10",
+                border: "hover:border-amber-500/30",
+              },
+            ].map((uc) => (
+              <div
+                key={uc.title}
+                className={`rounded-2xl border border-white/5 bg-gradient-to-b ${uc.color} p-5 ${uc.border} transition-all group`}
+              >
+                <div className="text-3xl mb-3">{uc.icon}</div>
+                <h3 className="font-bold text-sm mb-1.5">{uc.title}</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">{uc.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Blink Demo ── */}
       <section id="demo" className="py-24 px-5">
         <div className="max-w-5xl mx-auto">
@@ -137,9 +204,12 @@ export default function Home() {
                   <div className="text-5xl mb-2">🎫</div>
                   <div className="text-xs text-purple-300/70 font-mono">SOLANA BLINK</div>
                 </div>
-                {/* Corner badge */}
+                {/* Corner badges */}
+                <div className="absolute top-3 left-3 px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-semibold uppercase tracking-wider">
+                  Conference
+                </div>
                 <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 text-[10px] font-semibold uppercase tracking-wider">
-                  Devnet
+                  Gasless
                 </div>
               </div>
 
@@ -158,7 +228,7 @@ export default function Home() {
 
                 {/* Buy button */}
                 <button className="w-full py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-teal-500 font-semibold text-sm hover:brightness-110 transition shadow-lg shadow-purple-600/15">
-                  Buy Ticket &mdash; 0.05 SOL
+                  Buy Ticket &mdash; 0.05 SOL (Gasless)
                 </button>
               </div>
             </div>
@@ -175,10 +245,10 @@ export default function Home() {
       <section className="border-t border-b border-white/5 py-14 px-5">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            ["< 0.001 SOL", "Tx Fee"],
+            ["FREE", "Gas for Buyers"],
             ["~400ms", "Confirmation"],
-            ["100%", "On-chain"],
-            ["0", "Middlemen"],
+            ["5", "Event Types"],
+            ["NFT", "Ticket + POAP"],
           ].map(([value, label]) => (
             <div key={label}>
               <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
