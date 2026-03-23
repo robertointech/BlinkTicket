@@ -23,12 +23,38 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// GET - Returns Action metadata for the Blink with event_type badge
-export async function GET() {
-  const event = getDemoEvent();
+/** Extract event params from URL query or fall back to env defaults */
+function getEventParams(url: URL) {
+  const qEventId = url.searchParams.get("eventId");
+  const qAuthority = url.searchParams.get("authority");
+
+  if (qEventId && qAuthority) {
+    return {
+      eventId: Number(qEventId),
+      authority: qAuthority,
+      // For custom events, metadata comes from query or on-chain fetch
+      name: url.searchParams.get("name") || `Event #${qEventId}`,
+      description: url.searchParams.get("desc") || "Buy your ticket via Solana Blink",
+      ticketPriceSol: Number(url.searchParams.get("price") || "0.05"),
+      maxTickets: Number(url.searchParams.get("max") || "100"),
+      imageUrl: url.searchParams.get("image") || "https://ucarecdn.com/7aa46c85-08a4-4bc7-9376-a3b813a779d0/-/preview/880x864/-/quality/smart/-/format/auto/",
+      eventType: Number(url.searchParams.get("type") || "0"),
+    };
+  }
+
+  return getDemoEvent();
+}
+
+// GET - Returns Action metadata for the Blink
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const event = getEventParams(url);
 
   const typeLabel = EVENT_TYPE_LABELS[event.eventType] ?? "Event";
   const typeIcon = EVENT_TYPE_ICONS[event.eventType] ?? "🎫";
+
+  // Preserve query params in the action href
+  const searchStr = url.search || "";
 
   const payload: ActionGetResponse = {
     type: "action",
@@ -49,7 +75,7 @@ export async function GET() {
         {
           type: "transaction",
           label: `🎟️ Buy Ticket - ${event.ticketPriceSol} SOL (Gasless)`,
-          href: `/api/actions/buy-ticket`,
+          href: `/api/actions/buy-ticket${searchStr}`,
         },
       ],
     },
@@ -64,11 +90,11 @@ export async function OPTIONS() {
 }
 
 // POST - Build gasless buy_ticket transaction
-// The relay keypair pays the transaction fee, buyer only signs for the purchase
 export async function POST(request: Request) {
   try {
+    const url = new URL(request.url);
+    const event = getEventParams(url);
     const body: ActionPostRequest = await request.json();
-    const event = getDemoEvent();
 
     let buyerPubkey: PublicKey;
     try {
@@ -84,19 +110,14 @@ export async function POST(request: Request) {
     const programId = getProgramId();
     const relayKeypair = getRelayKeypair();
 
-    // Derive PDAs
     const authorityPubkey = new PublicKey(event.authority);
     const [eventPDA] = getEventPDA(authorityPubkey, event.eventId);
     const [ticketPDA] = getTicketPDA(eventPDA, buyerPubkey);
 
-    // Anchor instruction discriminator: sha256("global:buy_ticket")[0..8]
-    const discriminator = Buffer.from([
+    // Anchor discriminator for buy_ticket (no args after audit)
+    const data = Buffer.from([
       11, 24, 17, 193, 168, 116, 164, 169,
     ]);
-
-    // Encode loyalty_count arg (u8) — 0 for now, loyalty check can be added later
-    const loyaltyCount = Buffer.from([0]);
-    const data = Buffer.concat([discriminator, loyaltyCount]);
 
     const keys = [
       { pubkey: eventPDA, isSigner: false, isWritable: true },
@@ -114,14 +135,13 @@ export async function POST(request: Request) {
 
     const transaction = new Transaction().add(buyTicketIx);
 
-    // GASLESS: relay keypair pays the transaction fee
+    // Gasless: relay pays tx fee
     transaction.feePayer = relayKeypair.publicKey;
     const { blockhash, lastValidBlockHeight } =
       await connection.getLatestBlockhash("confirmed");
     transaction.recentBlockhash = blockhash;
     transaction.lastValidBlockHeight = lastValidBlockHeight;
 
-    // Relay partially signs (fee payer), buyer will sign in their wallet
     transaction.partialSign(relayKeypair);
 
     const payload = await createPostResponse({

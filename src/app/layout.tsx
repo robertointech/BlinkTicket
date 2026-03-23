@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import dynamic from "next/dynamic";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -12,6 +13,11 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+
+const SolanaProviders = dynamic(
+  () => import("./providers").then((mod) => mod.SolanaProviders),
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   title: "BlinkTicket | Event Tickets on Solana",
@@ -35,7 +41,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0a0f] min-h-screen`}
       >
-        {children}
+        <SolanaProviders>{children}</SolanaProviders>
       </body>
     </html>
   );

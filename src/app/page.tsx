@@ -1,3 +1,8 @@
+"use client";
+
+import { WalletButton } from "./components/WalletButton";
+import Link from "next/link";
+
 export default function Home() {
   const steps = [
     {
@@ -35,9 +40,10 @@ export default function Home() {
             <a href="#demo" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
               Demo
             </a>
-            <button className="text-sm font-medium px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-teal-500 hover:brightness-110 transition">
-              Connect Wallet
-            </button>
+            <Link href="/my-tickets" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
+              My Tickets
+            </Link>
+            <WalletButton />
           </nav>
         </div>
       </header>
@@ -66,17 +72,19 @@ export default function Home() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="#demo"
+            <Link
+              href="/create"
               className="inline-flex items-center justify-center px-7 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-violet-600 hover:brightness-110 transition shadow-lg shadow-purple-600/20"
             >
-              Try the Demo
-            </a>
+              Create Event
+            </Link>
             <a
-              href="#steps"
+              href="https://dial.to/?action=solana-action:https://blink-ticket.vercel.app/api/actions/buy-ticket"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center px-7 py-3 rounded-xl font-semibold border border-white/10 hover:bg-white/5 transition"
             >
-              How it works
+              Try Demo on dial.to
             </a>
           </div>
         </div>

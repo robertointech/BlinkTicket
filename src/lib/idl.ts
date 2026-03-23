@@ -30,9 +30,7 @@ export type EventTickets = {
         { name: "buyer"; isMut: true; isSigner: true },
         { name: "systemProgram"; isMut: false; isSigner: false }
       ];
-      args: [
-        { name: "loyaltyCount"; type: "u8" }
-      ];
+      args: [];
     },
     {
       name: "issuePoap";
@@ -151,9 +149,7 @@ export const IDL: EventTickets = {
         { name: "buyer", isMut: true, isSigner: true },
         { name: "systemProgram", isMut: false, isSigner: false },
       ],
-      args: [
-        { name: "loyaltyCount", type: "u8" },
-      ],
+      args: [],
     },
     {
       name: "issuePoap",
