@@ -37,7 +37,7 @@ function getEventParams(url: URL) {
       description: url.searchParams.get("desc") || "Buy your ticket via Solana Blink",
       ticketPriceSol: Number(url.searchParams.get("price") || "0.05"),
       maxTickets: Number(url.searchParams.get("max") || "100"),
-      imageUrl: url.searchParams.get("image") || "https://ucarecdn.com/7aa46c85-08a4-4bc7-9376-a3b813a779d0/-/preview/880x864/-/quality/smart/-/format/auto/",
+      imageUrl: url.searchParams.get("image") || `${url.origin}/blink-card.svg`,
       eventType: Number(url.searchParams.get("type") || "0"),
     };
   }
@@ -113,6 +113,15 @@ export async function POST(request: Request) {
     const authorityPubkey = new PublicKey(event.authority);
     const [eventPDA] = getEventPDA(authorityPubkey, event.eventId);
     const [ticketPDA] = getTicketPDA(eventPDA, buyerPubkey);
+
+    // Check if ticket PDA already exists (user already bought)
+    const existingTicket = await connection.getAccountInfo(ticketPDA);
+    if (existingTicket) {
+      return Response.json(
+        { message: "You already have a ticket for this event!" },
+        { status: 400, headers: ACTIONS_CORS_HEADERS }
+      );
+    }
 
     // Anchor discriminator for buy_ticket (no args after audit)
     const data = Buffer.from([

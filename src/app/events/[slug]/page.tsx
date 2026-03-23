@@ -1,59 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction, Connection } from "@solana/web3.js";
 import Link from "next/link";
 import { Navbar } from "../../components/Navbar";
-import { getEventType, type OnChainEvent } from "@/lib/event-types";
+import { getEventType } from "@/lib/event-types";
+import { useEvents, findEventBySlug } from "@/lib/use-events";
 
 const RPC = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 const BASE_URL = typeof window !== "undefined" ? window.location.origin : "https://blink-ticket.vercel.app";
 
 export default function EventDetailPage() {
   const params = useParams();
-  const slug = params?.slug as string; // format: "authority-eventId"
+  const slug = params?.slug as string;
   const { publicKey, signTransaction, connected } = useWallet();
   const { setVisible } = useWalletModal();
+  const { events, onChainLoaded } = useEvents();
 
-  const [event, setEvent] = useState<OnChainEvent | null>(null);
-  const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const findEvent = async (attempt: number): Promise<void> => {
-      try {
-        const res = await fetch("/api/events");
-        const events: OnChainEvent[] = await res.json();
-
-        // Match by "authority-eventId" OR by PDA
-        const found = events.find(
-          (e) => `${e.authority}-${e.eventId}` === slug || e.pda === slug
-        );
-
-        if (found) {
-          if (!cancelled) { setEvent(found); setLoading(false); }
-          return;
-        } else if (attempt < 3) {
-          // Retry after delay (new on-chain events may not be indexed yet)
-          await new Promise((r) => setTimeout(r, 2000));
-          if (!cancelled) return findEvent(attempt + 1);
-        }
-      } catch {
-        // ignore
-      }
-      if (!cancelled) setLoading(false);
-    };
-
-    findEvent(0);
-    return () => { cancelled = true; };
-  }, [slug]);
+  const event = findEventBySlug(events, slug);
+  const loading = !onChainLoaded && !event;
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -83,9 +55,6 @@ export default function EventDetailPage() {
       await connection.confirmTransaction(sig, "confirmed");
 
       showToast("Ticket purchased! Check My Tickets.", true);
-      // Refresh event
-      const events: OnChainEvent[] = await fetch("/api/events").then((r) => r.json());
-      setEvent(events.find((e) => `${e.authority}-${e.eventId}` === slug || e.pda === slug) ?? null);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Transaction failed", false);
     } finally {
@@ -113,7 +82,6 @@ export default function EventDetailPage() {
             <div className="h-6 bg-white/5 rounded w-1/3" />
             <div className="h-10 bg-white/5 rounded w-2/3" />
             <div className="h-4 bg-white/5 rounded w-full" />
-            <div className="h-4 bg-white/5 rounded w-3/4" />
             <div className="h-12 bg-white/5 rounded mt-6" />
           </div>
         </div>
@@ -129,9 +97,7 @@ export default function EventDetailPage() {
           <div className="text-5xl mb-4">🔍</div>
           <h2 className="text-xl font-bold mb-2">Event not found</h2>
           <p className="text-gray-500 mb-6">This event may have been closed or doesn&apos;t exist.</p>
-          <Link href="/events" className="text-purple-400 hover:text-purple-300 underline text-sm">
-            Back to Events
-          </Link>
+          <Link href="/events" className="text-purple-400 hover:text-purple-300 underline text-sm">Back to Events</Link>
         </div>
       </div>
     );
@@ -156,14 +122,12 @@ export default function EventDetailPage() {
       )}
 
       <div className="max-w-2xl mx-auto px-5 py-12">
-        {/* Breadcrumb */}
         <div className="text-xs text-gray-500 mb-6">
           <Link href="/events" className="hover:text-gray-300 transition">Events</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-400">{event.name}</span>
         </div>
 
-        {/* Header */}
         <div className={`rounded-2xl border border-white/5 bg-gradient-to-br ${t.gradient} p-6 sm:p-8 mb-6`}>
           <div className="flex items-center gap-2 mb-4">
             <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${t.badge}`}>
@@ -179,7 +143,6 @@ export default function EventDetailPage() {
           )}
           <p className="text-gray-400 text-sm leading-relaxed mb-6">{event.description}</p>
 
-          {/* Stats row */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-black/20 rounded-xl p-3 text-center">
               <div className="text-lg font-bold">{priceSol}</div>
@@ -195,15 +158,10 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-6">
-            <div
-              className="h-full bg-gradient-to-r from-purple-500 to-teal-500 rounded-full transition-all"
-              style={{ width: `${percent}%` }}
-            />
+            <div className="h-full bg-gradient-to-r from-purple-500 to-teal-500 rounded-full transition-all" style={{ width: `${percent}%` }} />
           </div>
 
-          {/* Buy button */}
           {event.isDemoEvent ? (
             <button
               onClick={() => showToast("Demo event — connect to Devnet for real events", false)}
@@ -229,55 +187,36 @@ export default function EventDetailPage() {
           )}
         </div>
 
-        {/* Share section */}
-        <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 mb-6">
-          <h3 className="font-bold text-sm mb-3">Share this event</h3>
-          <p className="text-xs text-gray-500 mb-3">
-            Copy the Blink URL and share on Twitter, Discord, WhatsApp, or anywhere.
-          </p>
-          <div className="flex gap-2">
-            <input
-              readOnly
-              value={dialUrl}
-              className="flex-1 bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs font-mono text-gray-400 truncate"
-            />
-            <button
-              onClick={copyBlink}
-              className="px-4 py-2 rounded-lg bg-purple-600/80 text-xs font-semibold hover:brightness-110 transition whitespace-nowrap"
-            >
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
+        {!event.isDemoEvent && (
+          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 mb-6">
+            <h3 className="font-bold text-sm mb-3">Share this event</h3>
+            <div className="flex gap-2">
+              <input readOnly value={dialUrl} className="flex-1 bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs font-mono text-gray-400 truncate" />
+              <button onClick={copyBlink} className="px-4 py-2 rounded-lg bg-purple-600/80 text-xs font-semibold hover:brightness-110 transition whitespace-nowrap">
+                {copied ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Details */}
         <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
           <h3 className="font-bold text-sm mb-3">Details</h3>
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between text-gray-400">
-              <span>Event PDA</span>
-              <a
-                href={`https://explorer.solana.com/address/${event.pda}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-400 hover:text-purple-300 font-mono"
-              >
-                {event.pda.slice(0, 8)}...{event.pda.slice(-4)} ↗
-              </a>
-            </div>
-            <div className="flex justify-between text-gray-400">
-              <span>Authority</span>
-              <span className="font-mono">{event.authority.slice(0, 8)}...{event.authority.slice(-4)}</span>
-            </div>
+            {!event.isDemoEvent && (
+              <div className="flex justify-between text-gray-400">
+                <span>Event PDA</span>
+                <a href={`https://explorer.solana.com/address/${event.pda}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 font-mono">
+                  {event.pda.slice(0, 8)}...{event.pda.slice(-4)} ↗
+                </a>
+              </div>
+            )}
             <div className="flex justify-between text-gray-400">
               <span>Event ID</span>
               <span className="font-mono">{event.eventId}</span>
             </div>
             <div className="flex justify-between text-gray-400">
               <span>Status</span>
-              <span className={event.isActive ? "text-teal-400" : "text-red-400"}>
-                {event.isActive ? "Active" : "Inactive"}
-              </span>
+              <span className={event.isActive ? "text-teal-400" : "text-red-400"}>{event.isActive ? "Active" : "Inactive"}</span>
             </div>
             <div className="flex justify-between text-gray-400">
               <span>Network</span>

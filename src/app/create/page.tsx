@@ -6,8 +6,10 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction, Connection } from "@solana/web3.js";
 import Link from "next/link";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Navbar } from "../components/Navbar";
 import { EVENT_TYPES as ET } from "@/lib/event-types";
+import { saveCreatedEvent } from "@/lib/use-events";
 
 const EVENT_TYPES = ET.map((t) => ({ value: t.value, label: t.label, icon: t.icon }));
 
@@ -68,7 +70,21 @@ export default function CreateEventPage() {
       const sig = await connection.sendRawTransaction(signed.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      // Redirect to events page with success params
+      // Save to sessionStorage so it appears immediately in /events
+      saveCreatedEvent({
+        pda: data.eventPDA,
+        authority: publicKey.toBase58(),
+        eventId,
+        name,
+        description,
+        ticketPrice: Math.round(parseFloat(priceSol) * LAMPORTS_PER_SOL),
+        maxTickets: parseInt(maxTickets),
+        ticketsSold: 0,
+        isActive: true,
+        eventType,
+        isDemoEvent: false,
+      });
+
       const params = new URLSearchParams({
         created: "1",
         blink: data.blinkUrl,

@@ -26,6 +26,12 @@ export async function POST(request: Request) {
     const [eventPDA] = getEventPDA(authorityKey, Number(eventId));
     const [ticketPDA] = getTicketPDA(eventPDA, buyer);
 
+    // Check if ticket already exists
+    const existing = await connection.getAccountInfo(ticketPDA);
+    if (existing) {
+      return NextResponse.json({ error: "You already have a ticket for this event!" }, { status: 400 });
+    }
+
     // buy_ticket discriminator (no args after audit)
     const data = Buffer.from([11, 24, 17, 193, 168, 116, 164, 169]);
 
