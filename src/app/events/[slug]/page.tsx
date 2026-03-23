@@ -25,14 +25,34 @@ export default function EventDetailPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch("/api/events")
-      .then((r) => r.json())
-      .then((events: OnChainEvent[]) => {
-        const found = events.find((e) => `${e.authority}-${e.eventId}` === slug);
-        setEvent(found ?? null);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    const findEvent = async (attempt: number): Promise<void> => {
+      try {
+        const res = await fetch("/api/events");
+        const events: OnChainEvent[] = await res.json();
+
+        // Match by "authority-eventId" OR by PDA
+        const found = events.find(
+          (e) => `${e.authority}-${e.eventId}` === slug || e.pda === slug
+        );
+
+        if (found) {
+          if (!cancelled) { setEvent(found); setLoading(false); }
+          return;
+        } else if (attempt < 3) {
+          // Retry after delay (new on-chain events may not be indexed yet)
+          await new Promise((r) => setTimeout(r, 2000));
+          if (!cancelled) return findEvent(attempt + 1);
+        }
+      } catch {
+        // ignore
+      }
+      if (!cancelled) setLoading(false);
+    };
+
+    findEvent(0);
+    return () => { cancelled = true; };
   }, [slug]);
 
   const showToast = (msg: string, ok: boolean) => {
@@ -65,7 +85,7 @@ export default function EventDetailPage() {
       showToast("Ticket purchased! Check My Tickets.", true);
       // Refresh event
       const events: OnChainEvent[] = await fetch("/api/events").then((r) => r.json());
-      setEvent(events.find((e) => `${e.authority}-${e.eventId}` === slug) ?? null);
+      setEvent(events.find((e) => `${e.authority}-${e.eventId}` === slug || e.pda === slug) ?? null);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Transaction failed", false);
     } finally {
