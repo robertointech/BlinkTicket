@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction, Connection } from "@solana/web3.js";
@@ -11,6 +12,7 @@ import { EVENT_TYPES as ET } from "@/lib/event-types";
 const EVENT_TYPES = ET.map((t) => ({ value: t.value, label: t.label, icon: t.icon }));
 
 export default function CreateEventPage() {
+  const router = useRouter();
   const { publicKey, signTransaction, connected } = useWallet();
   const { setVisible } = useWalletModal();
 
@@ -66,12 +68,14 @@ export default function CreateEventPage() {
       const sig = await connection.sendRawTransaction(signed.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      setResult({
-        blinkUrl: data.blinkUrl,
-        dialUrl: data.dialUrl,
-        eventPDA: data.eventPDA,
-        slug: `${publicKey.toBase58()}-${eventId}`,
+      // Redirect to events page with success params
+      const params = new URLSearchParams({
+        created: "1",
+        blink: data.blinkUrl,
+        dial: data.dialUrl,
+        pda: data.eventPDA,
       });
+      router.push(`/events?${params}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction, Connection } from "@solana/web3.js";
@@ -11,13 +12,16 @@ import { EVENT_TYPES, getEventType, type OnChainEvent } from "@/lib/event-types"
 const RPC = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 
 export default function EventsPage() {
+  const searchParams = useSearchParams();
   const { publicKey, signTransaction, connected } = useWallet();
   const { setVisible } = useWalletModal();
   const [events, setEvents] = useState<OnChainEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState(-1); // -1 = all
+  const [filter, setFilter] = useState(-1);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [createdBlink, setCreatedBlink] = useState<string | null>(null);
+  const [copiedBlink, setCopiedBlink] = useState(false);
 
   useEffect(() => {
     fetch("/api/events")
@@ -26,6 +30,18 @@ export default function EventsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Show success toast when redirected from /create
+  useEffect(() => {
+    if (searchParams?.get("created") === "1") {
+      setToast({ msg: "Event created on-chain!", ok: true });
+      setTimeout(() => setToast(null), 5000);
+      const blink = searchParams.get("dial");
+      if (blink) setCreatedBlink(blink);
+      // Clean URL without reload
+      window.history.replaceState({}, "", "/events");
+    }
+  }, [searchParams]);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -81,6 +97,22 @@ export default function EventsPage() {
       )}
 
       <div className="max-w-6xl mx-auto px-5 py-12">
+        {/* Created event banner */}
+        {createdBlink && (
+          <div className="mb-6 rounded-xl border border-teal-500/20 bg-teal-500/5 p-4">
+            <p className="text-sm font-semibold text-teal-300 mb-2">🎉 Event created! Share your Blink:</p>
+            <div className="flex gap-2">
+              <input readOnly value={createdBlink} className="flex-1 bg-black/20 border border-white/5 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-400 truncate" />
+              <button
+                onClick={() => { navigator.clipboard.writeText(createdBlink); setCopiedBlink(true); setTimeout(() => setCopiedBlink(false), 2000); }}
+                className="px-3 py-1.5 rounded-lg bg-teal-600/80 text-xs font-semibold hover:brightness-110 transition"
+              >
+                {copiedBlink ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <h1 className="text-3xl sm:text-4xl font-bold mb-2">
           Explore{" "}
           <span className="bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
