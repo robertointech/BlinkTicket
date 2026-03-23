@@ -2,16 +2,15 @@ import { NextResponse } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { DEMO_EVENTS } from "@/lib/demo-events";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30; // cache for 30 seconds
 
 const RPC = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
 const PROGRAM_ID = process.env.PROGRAM_ID || "EFzK4HY7f8yr9qqsMJcPunCTwHF9cA69h265UR58bvj1";
-
-// Event::SPACE = 8 + 32 + 8 + (4+50) + (4+200) + 8 + 2 + 2 + 1 + 1 + 1 = 321
 const EVENT_ACCOUNT_SIZE = 321;
+const RPC_TIMEOUT_MS = 8000;
 
 function parseEvent(pubkey: PublicKey, data: Buffer) {
-  let offset = 8; // skip Anchor discriminator
+  let offset = 8;
 
   const authority = new PublicKey(data.slice(offset, offset + 32)).toBase58();
   offset += 32;
@@ -58,35 +57,50 @@ function parseEvent(pubkey: PublicKey, data: Buffer) {
   };
 }
 
-export async function GET() {
-  const onChainEvents: Array<Record<string, unknown>> = [];
+async function fetchOnChainEvents(): Promise<Array<Record<string, unknown>>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
 
   try {
-    const connection = new Connection(RPC, "confirmed");
+    const connection = new Connection(RPC, {
+      commitment: "confirmed",
+      fetch: (url, options) => fetch(url, { ...options, signal: controller.signal }),
+    });
     const programId = new PublicKey(PROGRAM_ID);
 
     const accounts = await connection.getProgramAccounts(programId, {
       filters: [{ dataSize: EVENT_ACCOUNT_SIZE }],
     });
 
+    const events: Array<Record<string, unknown>> = [];
     for (const a of accounts) {
       try {
         const ev = parseEvent(a.pubkey, a.account.data);
-        // Only include valid-looking events
         if (ev.name && ev.name.length > 0) {
-          onChainEvents.push(ev);
+          events.push(ev);
         }
       } catch (err) {
-        // Skip malformed accounts
-        console.error("Failed to parse event account:", a.pubkey.toBase58(), err);
+        console.error(`[events] Failed to parse account ${a.pubkey.toBase58()}:`, err);
       }
     }
-  } catch (error) {
-    console.error("Error fetching on-chain events:", error);
+
+    console.log(`[events] Fetched ${events.length} on-chain events`);
+    return events;
+  } catch (error: unknown) {
+    const isTimeout = error instanceof DOMException && error.name === "AbortError";
+    if (isTimeout) {
+      console.error(`[events] RPC timeout after ${RPC_TIMEOUT_MS}ms — returning demos only`);
+    } else {
+      console.error(`[events] RPC error:`, error instanceof Error ? error.message : error);
+    }
+    return [];
+  } finally {
+    clearTimeout(timeout);
   }
+}
 
-  // On-chain first, then demo fallback
+export async function GET() {
+  const onChainEvents = await fetchOnChainEvents();
   const allEvents = [...onChainEvents, ...DEMO_EVENTS];
-
   return NextResponse.json(allEvents);
 }
