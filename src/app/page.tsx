@@ -1,9 +1,20 @@
 "use client";
 
-import { WalletButton } from "./components/WalletButton";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Navbar } from "./components/Navbar";
+import { getEventType, type OnChainEvent } from "@/lib/event-types";
 
 export default function Home() {
+  const [liveEvents, setLiveEvents] = useState<OnChainEvent[]>([]);
+
+  useEffect(() => {
+    fetch("/api/events")
+      .then((r) => r.json())
+      .then((events: OnChainEvent[]) => setLiveEvents(events.slice(0, 3)))
+      .catch(() => {});
+  }, []);
+
   const steps = [
     {
       num: "1",
@@ -24,32 +35,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#07070d] text-gray-100">
-      {/* ── Navbar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#07070d]/70 backdrop-blur-lg border-b border-white/5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-5">
-          <span className="text-lg font-bold bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
-            BlinkTicket
-          </span>
-          <nav className="flex items-center gap-5">
-            <a href="#steps" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
-              How it works
-            </a>
-            <a href="#use-cases" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
-              Use Cases
-            </a>
-            <a href="#demo" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
-              Demo
-            </a>
-            <Link href="/my-tickets" className="text-sm text-gray-400 hover:text-white transition hidden sm:inline">
-              My Tickets
-            </Link>
-            <WalletButton />
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* ── Hero ── */}
-      <section className="relative pt-36 pb-24 px-5 overflow-hidden">
+      <section className="relative pt-20 pb-24 px-5 overflow-hidden">
         {/* Ambient glow */}
         <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-purple-700/15 blur-[160px]" />
         <div className="pointer-events-none absolute top-20 right-0 w-[400px] h-[400px] rounded-full bg-teal-600/10 blur-[140px]" />
@@ -78,14 +67,12 @@ export default function Home() {
             >
               Create Event
             </Link>
-            <a
-              href="https://dial.to/?action=solana-action:https://blink-ticket.vercel.app/api/actions/buy-ticket"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/events"
               className="inline-flex items-center justify-center px-7 py-3 rounded-xl font-semibold border border-white/10 hover:bg-white/5 transition"
             >
-              Try Demo on dial.to
-            </a>
+              Explore Events
+            </Link>
           </div>
         </div>
       </section>
@@ -248,6 +235,55 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Live Events ── */}
+      {liveEvents.length > 0 && (
+        <section className="py-20 px-5 border-t border-white/5">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold">
+                  Live on{" "}
+                  <span className="bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
+                    Devnet
+                  </span>
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">Real events from the blockchain</p>
+              </div>
+              <Link
+                href="/events"
+                className="text-sm text-purple-400 hover:text-purple-300 transition"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-5">
+              {liveEvents.map((ev) => {
+                const t = getEventType(ev.eventType);
+                const priceSol = ev.ticketPrice / 1_000_000_000;
+                const remaining = ev.maxTickets - ev.ticketsSold;
+                return (
+                  <Link
+                    key={ev.pda}
+                    href={`/events/${ev.authority}-${ev.eventId}`}
+                    className={`rounded-2xl border border-white/5 bg-gradient-to-b ${t.gradient} p-5 hover:border-white/10 transition-all group`}
+                  >
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider mb-3 ${t.badge}`}>
+                      {t.icon} {t.label}
+                    </span>
+                    <h3 className="font-bold mb-1 group-hover:text-white transition line-clamp-1">{ev.name}</h3>
+                    <p className="text-xs text-gray-400 line-clamp-1 mb-3">{ev.description}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="font-semibold text-gray-300">{priceSol} SOL</span>
+                      <span>{remaining} remaining</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Stats bar ── */}
       <section className="border-t border-b border-white/5 py-14 px-5">

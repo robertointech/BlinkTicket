@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Connection, PublicKey } from "@solana/web3.js";
 import Link from "next/link";
+import { Navbar } from "../components/Navbar";
 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 
@@ -68,18 +69,7 @@ export default function MyTicketsPage() {
 
   return (
     <div className="min-h-screen bg-[#07070d] text-gray-100">
-      <header className="border-b border-white/5 bg-[#07070d]/70 backdrop-blur-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-5">
-          <Link href="/" className="text-lg font-bold bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
-            BlinkTicket
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/create" className="text-sm text-gray-400 hover:text-white transition">
-              Create Event
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-5 py-16">
         <h1 className="text-3xl font-bold mb-2">
@@ -114,7 +104,7 @@ export default function MyTicketsPage() {
             {tickets.map((t) => (
               <div
                 key={t.pubkey}
-                className="rounded-xl border border-white/5 bg-white/[0.02] p-4 flex items-center justify-between"
+                className="rounded-xl border border-white/5 bg-white/[0.02] p-4 flex items-center justify-between hover:bg-white/[0.04] transition"
               >
                 <div>
                   <p className="text-xs text-gray-500 font-mono mb-1">
@@ -124,15 +114,25 @@ export default function MyTicketsPage() {
                     {(t.purchasePrice / 1_000_000_000).toFixed(4)} SOL
                   </p>
                 </div>
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                    t.isValid
-                      ? "bg-teal-500/20 text-teal-300"
-                      : "bg-red-500/20 text-red-300"
-                  }`}
-                >
-                  {t.isValid ? "Valid" : "Cancelled"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                      t.isValid
+                        ? "bg-teal-500/20 text-teal-300"
+                        : "bg-red-500/20 text-red-300"
+                    }`}
+                  >
+                    {t.isValid ? "Valid" : "Cancelled"}
+                  </span>
+                  <a
+                    href={`https://explorer.solana.com/address/${t.pubkey}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-gray-600 hover:text-gray-400"
+                  >
+                    ↗
+                  </a>
+                </div>
               </div>
             ))}
           </div>

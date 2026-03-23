@@ -5,14 +5,10 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction, Connection } from "@solana/web3.js";
 import Link from "next/link";
+import { Navbar } from "../components/Navbar";
+import { EVENT_TYPES as ET } from "@/lib/event-types";
 
-const EVENT_TYPES = [
-  { value: 0, label: "Conference / Meetup", icon: "🎪" },
-  { value: 1, label: "Research / DeSci", icon: "🔬" },
-  { value: 2, label: "Music & Art", icon: "🎵" },
-  { value: 3, label: "Community / DAO", icon: "👥" },
-  { value: 4, label: "Open / Other", icon: "🚀" },
-];
+const EVENT_TYPES = ET.map((t) => ({ value: t.value, label: t.label, icon: t.icon }));
 
 export default function CreateEventPage() {
   const { publicKey, signTransaction, connected } = useWallet();
@@ -24,7 +20,7 @@ export default function CreateEventPage() {
   const [maxTickets, setMaxTickets] = useState("100");
   const [eventType, setEventType] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ blinkUrl: string; dialUrl: string; eventPDA: string } | null>(null);
+  const [result, setResult] = useState<{ blinkUrl: string; dialUrl: string; eventPDA: string; slug: string } | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -74,6 +70,7 @@ export default function CreateEventPage() {
         blinkUrl: data.blinkUrl,
         dialUrl: data.dialUrl,
         eventPDA: data.eventPDA,
+        slug: `${publicKey.toBase58()}-${eventId}`,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");
@@ -90,19 +87,7 @@ export default function CreateEventPage() {
 
   return (
     <div className="min-h-screen bg-[#07070d] text-gray-100">
-      {/* Nav */}
-      <header className="border-b border-white/5 bg-[#07070d]/70 backdrop-blur-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-5">
-          <Link href="/" className="text-lg font-bold bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">
-            BlinkTicket
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/my-tickets" className="text-sm text-gray-400 hover:text-white transition">
-              My Tickets
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="max-w-lg mx-auto px-5 py-16">
         <h1 className="text-3xl font-bold mb-2">
@@ -158,11 +143,27 @@ export default function CreateEventPage() {
               </div>
             </div>
 
+            <div className="flex gap-2 mt-6">
+              <Link
+                href={`/events/${result.slug}`}
+                className="flex-1 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-teal-500 text-sm font-semibold text-center hover:brightness-110 transition"
+              >
+                View Event
+              </Link>
+              <a
+                href={`https://explorer.solana.com/address/${result.eventPDA}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+              >
+                Explorer ↗
+              </a>
+            </div>
             <button
               onClick={() => { setResult(null); setName(""); setDescription(""); }}
-              className="mt-6 w-full py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+              className="w-full py-2 rounded-lg border border-white/5 text-xs text-gray-500 hover:bg-white/5 transition"
             >
-              Create Another Event
+              Create Another
             </button>
           </div>
         ) : (
