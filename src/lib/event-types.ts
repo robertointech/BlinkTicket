@@ -23,4 +23,7 @@ export interface OnChainEvent {
   ticketsSold: number;
   isActive: boolean;
   eventType: number;
+  isDemoEvent?: boolean;
+  city?: string;
+  date?: string;
 }

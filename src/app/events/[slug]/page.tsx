@@ -145,10 +145,18 @@ export default function EventDetailPage() {
 
         {/* Header */}
         <div className={`rounded-2xl border border-white/5 bg-gradient-to-br ${t.gradient} p-6 sm:p-8 mb-6`}>
-          <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider mb-4 ${t.badge}`}>
-            {t.icon} {t.label}
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-3">{event.name}</h1>
+          <div className="flex items-center gap-2 mb-4">
+            <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${t.badge}`}>
+              {t.icon} {t.label}
+            </span>
+            {event.isDemoEvent && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-gray-500">Demo</span>
+            )}
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{event.name}</h1>
+          {event.city && (
+            <p className="text-xs text-gray-500 mb-3">📍 {event.city}{event.date ? ` · ${event.date}` : ""}</p>
+          )}
           <p className="text-gray-400 text-sm leading-relaxed mb-6">{event.description}</p>
 
           {/* Stats row */}
@@ -176,7 +184,14 @@ export default function EventDetailPage() {
           </div>
 
           {/* Buy button */}
-          {connected ? (
+          {event.isDemoEvent ? (
+            <button
+              onClick={() => showToast("Demo event — connect to Devnet for real events", false)}
+              className="w-full py-3 rounded-xl border border-white/10 font-semibold transition text-gray-400 text-base"
+            >
+              Buy Ticket — {priceSol} SOL
+            </button>
+          ) : connected ? (
             <button
               disabled={soldOut || buying}
               onClick={handleBuy}

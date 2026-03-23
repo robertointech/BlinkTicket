@@ -155,9 +155,16 @@ export default function EventsPage() {
                   <div className="p-5">
                     {/* Badge + icon */}
                     <div className="flex items-center justify-between mb-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${t.badge}`}>
-                        {t.icon} {t.label}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${t.badge}`}>
+                          {t.icon} {t.label}
+                        </span>
+                        {ev.isDemoEvent && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-gray-500">
+                            Demo
+                          </span>
+                        )}
+                      </div>
                       {soldOut && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-300">
                           Sold Out
@@ -173,9 +180,16 @@ export default function EventsPage() {
                     </Link>
 
                     {/* Description */}
-                    <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-2">
+                    <p className="text-xs text-gray-400 leading-relaxed mb-2 line-clamp-2">
                       {ev.description}
                     </p>
+
+                    {/* City + date for demo events */}
+                    {ev.city && (
+                      <p className="text-[10px] text-gray-600 mb-3">
+                        📍 {ev.city}{ev.date ? ` · ${ev.date}` : ""}
+                      </p>
+                    )}
 
                     {/* Price + tickets */}
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
@@ -184,7 +198,14 @@ export default function EventsPage() {
                     </div>
 
                     {/* Buy button */}
-                    {connected ? (
+                    {ev.isDemoEvent ? (
+                      <button
+                        onClick={() => showToast("Demo event — connect to Devnet for real events", false)}
+                        className="w-full py-2.5 rounded-lg border border-white/10 font-semibold text-sm hover:bg-white/5 transition text-gray-400"
+                      >
+                        Buy Ticket — {priceSol} SOL
+                      </button>
+                    ) : connected ? (
                       <button
                         disabled={soldOut || buyingId === ev.pda}
                         onClick={() => handleBuy(ev)}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { DEMO_EVENTS } from "@/lib/demo-events";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ const PROGRAM_ID = process.env.PROGRAM_ID || "EFzK4HY7f8yr9qqsMJcPunCTwHF9cA69h2
 const EVENT_ACCOUNT_SIZE = 321;
 
 export async function GET() {
+  let onChainEvents: Array<Record<string, unknown>> = [];
+
   try {
     const connection = new Connection(RPC, "confirmed");
     const programId = new PublicKey(PROGRAM_ID);
@@ -18,9 +21,9 @@ export async function GET() {
       filters: [{ dataSize: EVENT_ACCOUNT_SIZE }],
     });
 
-    const events = accounts.map((a) => {
+    onChainEvents = accounts.map((a) => {
       const data = a.account.data;
-      let offset = 8; // skip discriminator
+      let offset = 8;
 
       const authority = new PublicKey(data.slice(offset, offset + 32)).toBase58();
       offset += 32;
@@ -63,12 +66,15 @@ export async function GET() {
         ticketsSold,
         isActive,
         eventType,
+        isDemoEvent: false,
       };
     });
-
-    return NextResponse.json(events);
   } catch (error) {
-    console.error("Error fetching events:", error);
-    return NextResponse.json([], { status: 200 });
+    console.error("Error fetching on-chain events:", error);
   }
+
+  // Merge: on-chain events first, then demo events as fallback
+  const allEvents = [...onChainEvents, ...DEMO_EVENTS];
+
+  return NextResponse.json(allEvents);
 }
