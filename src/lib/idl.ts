@@ -1,5 +1,5 @@
 // Anchor IDL type for EventTickets program v2
-// Includes: event_type, buy_ticket with loyalty, mint_ticket_nft, issue_poap, leave_review
+// Includes: event_type, buy_ticket with loyalty, issue_poap, leave_review
 
 export type EventTickets = {
   version: "0.2.0";
@@ -32,24 +32,6 @@ export type EventTickets = {
       ];
       args: [
         { name: "loyaltyCount"; type: "u8" }
-      ];
-    },
-    {
-      name: "mintTicketNft";
-      accounts: [
-        { name: "event"; isMut: false; isSigner: false },
-        { name: "ticket"; isMut: false; isSigner: false },
-        { name: "nftMint"; isMut: true; isSigner: false },
-        { name: "nftTokenAccount"; isMut: true; isSigner: false },
-        { name: "metadata"; isMut: true; isSigner: false },
-        { name: "buyer"; isMut: true; isSigner: true },
-        { name: "tokenMetadataProgram"; isMut: false; isSigner: false },
-        { name: "tokenProgram"; isMut: false; isSigner: false },
-        { name: "systemProgram"; isMut: false; isSigner: false },
-        { name: "sysvarInstructions"; isMut: false; isSigner: false }
-      ];
-      args: [
-        { name: "uri"; type: "string" }
       ];
     },
     {
@@ -171,24 +153,6 @@ export const IDL: EventTickets = {
       ],
       args: [
         { name: "loyaltyCount", type: "u8" },
-      ],
-    },
-    {
-      name: "mintTicketNft",
-      accounts: [
-        { name: "event", isMut: false, isSigner: false },
-        { name: "ticket", isMut: false, isSigner: false },
-        { name: "nftMint", isMut: true, isSigner: false },
-        { name: "nftTokenAccount", isMut: true, isSigner: false },
-        { name: "metadata", isMut: true, isSigner: false },
-        { name: "buyer", isMut: true, isSigner: true },
-        { name: "tokenMetadataProgram", isMut: false, isSigner: false },
-        { name: "tokenProgram", isMut: false, isSigner: false },
-        { name: "systemProgram", isMut: false, isSigner: false },
-        { name: "sysvarInstructions", isMut: false, isSigner: false },
-      ],
-      args: [
-        { name: "uri", type: "string" },
       ],
     },
     {
